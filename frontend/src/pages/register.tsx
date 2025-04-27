@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useRouter } from 'next/router';
 import Script from 'next/script';
+import { useToast } from '../contexts/ToastContext';
+import { googleOAuthService } from '../services/googleOAuthService';
+import { useAuthStore } from '../stores/useAuthStore';
 
 interface GoogleOAuthResponse {
   code: string;
@@ -30,61 +32,54 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [error, setError] = useState('');
-  const { register, googleLogin } = useAuth();
+  const { register, googleLogin } = useAuthStore();
+  const { addToast } = useToast();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await register(email, password, firstName, lastName);
-    } catch (err) {
-      setError('Registration failed');
+      addToast('Registration successful!', 'success');
+      router.push('/dashboard');
+    } catch (error) {
+      addToast(
+        error instanceof Error ? error.message : 'Registration failed',
+        'error'
+      );
     }
   };
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleLogin = async () => {
     try {
-      // Initialize Google OAuth
-      const client = window.google.accounts.oauth2.initCodeClient({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-        scope: 'email profile',
-        callback: async (response: GoogleOAuthResponse) => {
+      const client = googleOAuthService.initGoogleClient(async (response: GoogleOAuthResponse) => {
+        try {
           const { code } = response;
-          const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: new URLSearchParams({
-              code,
-              client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-              client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-              redirect_uri: window.location.origin,
-              grant_type: 'authorization_code',
-            }),
-          });
-
-          const tokens = await tokenResponse.json();
-          const userInfo = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-            headers: {
-              Authorization: `Bearer ${tokens.access_token}`,
-            },
-          });
-
-          const userData = await userInfo.json();
+          const tokens = await googleOAuthService.getTokens(code);
+          const userInfo = await googleOAuthService.getUserInfo(tokens.access_token);
+          
           await googleLogin(
-            userData.email,
-            userData.given_name,
-            userData.family_name,
-            userData.id
+            userInfo.email,
+            userInfo.given_name,
+            userInfo.family_name,
+            userInfo.id
           );
-        },
+          addToast('Google login successful!', 'success');
+          router.push('/dashboard');
+        } catch (error) {
+          addToast(
+            error instanceof Error ? error.message : 'Google login failed',
+            'error'
+          );
+        }
       });
 
       client.requestCode();
-    } catch (err) {
-      setError('Google signup failed');
+    } catch (error) {
+      addToast(
+        error instanceof Error ? error.message : 'Failed to initialize Google login',
+        'error'
+      );
     }
   };
 
@@ -162,10 +157,6 @@ export default function Register() {
               </div>
             </div>
 
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
-
             <div>
               <button
                 type="submit"
@@ -188,7 +179,7 @@ export default function Register() {
 
             <div className="mt-6">
               <button
-                onClick={handleGoogleSignup}
+                onClick={handleGoogleLogin}
                 className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">

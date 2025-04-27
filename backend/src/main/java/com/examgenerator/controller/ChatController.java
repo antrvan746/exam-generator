@@ -9,6 +9,8 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
+import java.time.Instant;
+import java.util.UUID;
 
 @Slf4j
 @Controller
@@ -26,8 +28,14 @@ public class ChatController {
 
         String response = chatService.generateResponse(request.getMessage());
 
+        ChatResponse chatResponse = new ChatResponse(
+                response,
+                "assistant",
+                UUID.randomUUID().toString(),
+                Instant.now().toString());
+
         log.info("WebSocket Response Sent - Session: {}, Topic: /topic/messages, Response: {}",
-                sessionId, response);
-        return new ChatResponse(response);
+                sessionId, chatResponse);
+        return chatResponse;
     }
 }

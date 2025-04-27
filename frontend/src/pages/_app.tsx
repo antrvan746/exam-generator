@@ -1,4 +1,4 @@
-import { AuthProvider } from '../contexts/AuthContext';
+import { ToastProvider } from '../contexts/ToastContext';
 import '../styles/globals.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
@@ -16,9 +16,9 @@ export default function App({ Component, pageProps }: AppProps) {
         src="https://accounts.google.com/gsi/client"
         strategy="beforeInteractive"
       />
-      <AuthProvider>
+      <ToastProvider>
         <Component {...pageProps} />
-      </AuthProvider>
+      </ToastProvider>
     </>
   );
 } 

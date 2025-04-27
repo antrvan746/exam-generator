@@ -1,10 +1,13 @@
 package com.examgenerator.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
 @Data
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class ChatResponse {
-    private final String message;
+    private String content;
+    private String role;
+    private String id;
+    private String timestamp;
 }

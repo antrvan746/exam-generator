@@ -6,12 +6,11 @@ import org.springframework.stereotype.Service;
 @Service
 public class OpenAiProvider implements AiProvider {
 
-    private OpenAiChatModel chatModel;
+    private final OpenAiChatModel chatModel;
 
     public OpenAiProvider(OpenAiChatModel chatModel) {
         this.chatModel = chatModel;
     }
-
 
     @Override
     public String generateResponse(String prompt) {
